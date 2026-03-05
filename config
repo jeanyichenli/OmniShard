@@ -1,4 +1,5 @@
 #!/bin/bash
-export PROJECT="/Users/jean/code_practice/go_projects/FileUploadSystem"
+export PROJECT="/Users/jean/code_practice/OmniShard"
 export REPO="${PROJECT}/repo"
 export TEST="${PROJECT}/test"
+export REDIS_URI="redis://localhost:6379"
