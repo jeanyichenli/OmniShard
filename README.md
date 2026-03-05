@@ -110,3 +110,15 @@ On success, the API responds with a JSON payload similar to:
 ```
 
 This `uploadid` can be used later for tracking the upload session as more features are added.
+
+## Future work
+
+Planned next steps (not implemented yet):
+
+- **HTTP/API layer**
+  - Endpoints to check the status of upload processing with uploadid
+  - Endpoints to download the uploaded file
+- **Additional features**
+  - Logging service for recording code events
+  - Metadata structure stored in MongoDB
+  - Dockerfile and Docker Compose setup for containerized and K8s deployment
