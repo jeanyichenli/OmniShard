@@ -6,8 +6,11 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
+	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -19,6 +22,16 @@ const (
 	chunkSizeOptionName      = "chunk-size"
 	chunkSizeShortOptionName = "c"
 )
+
+// Transform unit string to unit bytes
+var sizeMap = map[string]float64{
+	"k": 1024,
+	"K": 1024,
+	"m": 1024 * 1024,
+	"M": 1024 * 1024,
+	"g": 1024 * 1024 * 1024,
+	"G": 1024 * 1024 * 1024,
+}
 
 // uploadCmd represents the upload command
 var uploadCmd = &cobra.Command{
@@ -36,13 +49,18 @@ var uploadCmd = &cobra.Command{
 		fmt.Println("upload called")
 
 		// Get flags
-		filepath, chunkSize, err := getUploadOptions(cmd)
+		filepath, chunkString, err := getUploadOptions(cmd)
 		if err != nil {
 			fmt.Printf("Error parsing options %s, err: %s\n", filepath, err.Error())
 			return
 		}
 
-		fmt.Printf("filepath: %s, chunkSize: %v\n", filepath, chunkSize)
+		// Calculate chunk size
+		chunkerSize, err := transfromChunkString(chunkString)
+		if err != nil {
+			fmt.Printf("Error transforming chunk size, err: %s\n", err.Error())
+			return
+		}
 
 		// Open file
 		// TODO: Find other method to handle large file sizes like 100G.
@@ -53,8 +71,20 @@ var uploadCmd = &cobra.Command{
 		}
 		defer file.Close()
 
+		// Get file size
+		fi, err := file.Stat()
+		if err != nil {
+			fmt.Printf("Error getting status of file %s, err: %s\n", filepath, err.Error())
+			return
+		}
+
+		fileSize := fi.Size()                                     // Total file size
+		totalChunks := math.Ceil(float64(fileSize) / chunkerSize) // Chunk number (upper round)
+
+		fmt.Println("fileSize:", fileSize, ",totalChunks:", totalChunks)
+
 		// POST the file to mock API
-		// TODO: use another http package to separate
+		// TODO: program local http module to separate http function calls and main flow
 		url := "http://localhost:8080/upload"
 		req, err := http.NewRequest("POST", url, nil)
 		if err != nil {
@@ -114,4 +144,29 @@ func getUploadOptions(cmd *cobra.Command) (filepath, chunkSize string, err error
 	}
 
 	return filepath, chunkSize, err
+}
+
+func transfromChunkString(chunkString string) (chunkerSize float64, err error) {
+	// Check string format
+	if !checkChunkStringFormat(chunkString) {
+		return 0, fmt.Errorf("invalid chunker size format")
+	}
+
+	unitStr := chunkString[len(chunkString)-1:]
+	numberStr := chunkString[:len(chunkString)-1]
+
+	number, err := strconv.Atoi(numberStr)
+	if err != nil {
+		fmt.Printf("Error converting string to int, err: %s\n", err.Error())
+		return 0, err
+	}
+
+	chunkerSize = float64(number) * sizeMap[unitStr]
+
+	return chunkerSize, nil
+}
+
+func checkChunkStringFormat(chunkString string) bool {
+	re := regexp.MustCompile(`^\d+[KMGkmg]$`) // Number + Unit
+	return re.MatchString(chunkString)
 }
