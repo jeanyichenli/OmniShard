@@ -1,4 +1,4 @@
-APP_NAME := fileUploadSys
+APP_NAME := OmniShard
 SOURCE := .
 BUILD_DIR := bin
 GIT_VERSION := $(shell git describe --tags --always --dirty)
