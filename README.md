@@ -8,6 +8,8 @@
 
 A modular backend system for handling chunked file uploads with resumable support, cryptographic verification (SHA256 / AES-GCM), and distributed metadata tracking.
 
+In the recent refactoring phase, I adopted Conventional Commits to improve project maintainability.
+
 ### Project structure (current)
 
 ```
