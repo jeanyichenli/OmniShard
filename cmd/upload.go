@@ -4,6 +4,8 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math"
@@ -13,6 +15,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jeanyichenli/FileUploadSystem/api/handlers"
 	"github.com/spf13/cobra"
 )
 
@@ -81,16 +84,30 @@ var uploadCmd = &cobra.Command{
 		fileSize := fi.Size()                                     // Total file size
 		totalChunks := math.Ceil(float64(fileSize) / chunkerSize) // Chunk number (upper round)
 
-		fmt.Println("fileSize:", fileSize, ",totalChunks:", totalChunks)
-
-		// POST the file to mock API
+		// POST the file to upload API
 		// TODO: program local http module to separate http function calls and main flow
+
+		// Prepare body
+		uploadContent := handlers.UploadSession{
+			Filename:    filepath,
+			TotalSize:   fileSize,
+			ChunkSize:   int64(chunkerSize),
+			TotalChunks: int64(totalChunks),
+		}
+
+		uploadBody, err := json.Marshal(uploadContent)
+		if err != nil {
+			fmt.Printf("Error json marshaling when uploading, err: %s\n", err.Error())
+		}
+
+		// Send request
 		url := "http://localhost:8080/upload"
-		req, err := http.NewRequest("POST", url, nil)
+		req, err := http.NewRequest("POST", url, bytes.NewBuffer(uploadBody))
 		if err != nil {
 			fmt.Printf("Error creating new request to %s, err: %s\n", url, err.Error())
 			return
 		}
+		req.Header.Set("Content-Type", "application/json")
 
 		client := http.Client{
 			Timeout: 5 * time.Second,
